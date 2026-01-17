@@ -59,12 +59,12 @@ const Navbar = () => {
           </button>
         ) : (
           <NavLink
-            to="/auth"
+            to="/login"
             className={({ isActive }) =>
               isActive ? "text-blue-600" : "text-gray-600"
             }
           >
-            Login/Signup
+            Login
           </NavLink>
         )}
       </div>
