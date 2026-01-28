@@ -54,15 +54,6 @@ const ShopDetail: React.FC = () => {
     }
   };
 
-  // const waitTime = shop.currentQueue * shop.avgWaitMinutes;
-  // const getBusyLevel = () => {
-  //   if (waitTime > 60) return { label: "Very Busy", color: "text-red-600" };
-  //   if (waitTime > 30) return { label: "Moderate", color: "text-orange-500" };
-  //   return { label: "Fast Move", color: "text-green-600" };
-  // };
-  // const busy = getBusyLevel();
-
-  // Handle case where shopId doesn't match any of our data
   if (!shop) {
     return (
       <div className="p-10 text-center">

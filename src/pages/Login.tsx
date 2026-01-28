@@ -1,84 +1,66 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Phone, Lock, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { SignIn } from "@clerk/clerk-react";
+import { Link } from "react-router-dom";
 
-const Login: React.FC = () => {
-  const [showPassword, setShowPassword] = useState(false);
-  const navigate = useNavigate();
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    const savedRole = localStorage.getItem("userRole") || "customer";
-    localStorage.setItem("isLoggedIn", "true");
-    navigate(savedRole === "business" ? "/admin" : "/explore");
-    window.location.reload();
-  };
-
+const Login = () => {
   return (
-    <div className="min-h-[80vh] flex items-center justify-center p-6">
-      <div className="w-full max-w-md bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-100">
-        <h1 className="text-3xl font-black mb-2 text-gray-900">Welcome Back</h1>
-        <p className="text-gray-500 mb-8 font-medium">
-          Login to your Q-LINE account.
-        </p>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
+      <div className="mb-8 text-center">
+        <h1 className="text-4xl font-black tracking-tighter text-gray-900">
+          Q-LINE
+        </h1>
+        <p className="text-gray-500 font-medium">Manage your spots with ease</p>
+      </div>
 
-        <form onSubmit={handleLogin} className="space-y-5">
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-400 uppercase ml-1">
-              Phone Number
-            </label>
-            <div className="relative">
-              <Phone
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                size={18}
-              />
-              <input
-                type="tel"
-                placeholder="080..."
-                className="w-full pl-12 pr-4 py-4 bg-gray-50 rounded-2xl outline-none"
-                required
-              />
-            </div>
-          </div>
+      <div className="pl-5 w-full max-w-md">
+        {/* Clerk component properly edited to match our UI */}
+        <SignIn
+          routing="path"
+          path="/login"
+          signUpUrl="/signup"
+          appearance={{
+            elements: {
+              card: {
+                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.1)",
+                borderRadius: "2.5rem",
+                border: "1px solid #f3f4f6",
+                padding: "2rem",
+                width: "100%",
+              },
+              formButtonPrimary: {
+                backgroundColor: "#2563eb",
+                fontSize: "0.875rem",
+                borderRadius: "1rem",
+                height: "3.5rem",
+                fontWeight: "700",
+                "&:hover": {
+                  backgroundColor: "#1d4ed8",
+                },
+              },
+              formFieldInput: {
+                backgroundColor: "#f9fafb",
+                borderRadius: "0.75rem",
+                border: "1px solid #e5e7eb",
+                height: "4rem",
+              },
+              footer: {
+                display: "none", // We'll use our custom link below for better control
+              },
+              headerTitle: {
+                fontSize: "1.25rem",
+                fontWeight: "700",
+              },
+            },
+          }}
+        />
 
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-400 uppercase ml-1">
-              Password
-            </label>
-            <div className="relative">
-              <Lock
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                size={18}
-              />
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
-                className="w-full pl-12 pr-12 py-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                required
-              />
-              {/* Show/Hide Toggle */}
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 transition"
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-black text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-gray-800 transition-all"
+        {/* Custom Footer Link */}
+        <p className="mt-8 text-center text-sm text-gray-500 font-medium">
+          Don't have an account?{" "}
+          <Link
+            to="/signup"
+            className="text-blue-600 font-black hover:underline transition-all"
           >
-            Login <ArrowRight size={20} />
-          </button>
-        </form>
-
-        <p className="mt-8 text-center text-sm font-medium text-gray-500">
-          New to Q-LINE?{" "}
-          <Link to="/signup" className="text-blue-600 font-bold">
-            Create Account
+            SignUp
           </Link>
         </p>
       </div>

@@ -53,6 +53,7 @@ const Explore: React.FC = () => {
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <div className="mb-8">
+        {/* Search Bar */}
         <h1 className="text-3xl font-bold mb-4">Find a Service</h1>
         <input
           type="text"
@@ -61,6 +62,7 @@ const Explore: React.FC = () => {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none mb-4"
         />
+
         {/* Category Pills */}
         <div className="flex gap-2 overflow-x-auto pb-2">
           {categories.map((category) => (
@@ -79,6 +81,7 @@ const Explore: React.FC = () => {
         </div>
       </div>
 
+      {/* Handling filtered search */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredShops.length > 0 ? (
           filteredShops.map((shop) => <ShopCard key={shop.id} shop={shop} />)

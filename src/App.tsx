@@ -6,8 +6,10 @@ import ShopDetail from "./pages/ShopDetails";
 import MyQueue from "./pages/MyQueue";
 import { AdminDash } from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
+import UserProfilePage from "./pages/UserProfile";
 import Login from "./pages/Login";
-import Signup from "./pages/SignUp";
+import SignUp from "./pages/SignUp";
+import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
 // ... import other pages
 
 function App() {
@@ -15,14 +17,65 @@ function App() {
     <>
       <Navbar />
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/explore" element={<Explore />} />
-        <Route path="/admin" element={<AdminDash />} />
-        <Route path="/my-queue" element={<MyQueue />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        {/* Dynamic Route: :shopId will change based on the shop clicked */}
         <Route path="/shop/:shopId" element={<ShopDetail />} />
+
+        {/* Clerk Auth Routes (Using Clerk's built-in UI) */}
+        <Route path="/login/*" element={<Login />} />
+        <Route path="/signup/*" element={<SignUp />} />
+
+        {/* Protected Routes (Only for logged-in users) */}
+        <Route
+          path="/my-queue"
+          element={
+            <>
+              <SignedIn>
+                {" "}
+                <MyQueue />{" "}
+              </SignedIn>
+              <SignedOut>
+                {" "}
+                <RedirectToSignIn />{" "}
+              </SignedOut>
+            </>
+          }
+        />
+
+        <Route
+          path="/admin"
+          element={
+            <>
+              <SignedIn>
+                {" "}
+                <AdminDash />{" "}
+              </SignedIn>
+              <SignedOut>
+                {" "}
+                <RedirectToSignIn />{" "}
+              </SignedOut>
+            </>
+          }
+        />
+
+        {/* New Profile Route */}
+        <Route
+          path="/profile/*"
+          element={
+            <>
+              <SignedIn>
+                {" "}
+                <UserProfilePage />{" "}
+              </SignedIn>
+              <SignedOut>
+                {" "}
+                <RedirectToSignIn />{" "}
+              </SignedOut>
+            </>
+          }
+        />
+
         <Route path="*" element={<NotFound />} />
       </Routes>
     </>

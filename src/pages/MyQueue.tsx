@@ -33,7 +33,7 @@ const MyQueue: React.FC = () => {
 
       <button
         onClick={leaveQueue}
-        className="w-full mt-4 text-red-500 font-semibold"
+        className="w-full mt-5 text-red-500 font-semibold text-xl"
       >
         Leave Queue
       </button>

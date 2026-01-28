@@ -1,14 +1,9 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
+import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
+import { LayoutDashboard, User } from "lucide-react";
 
 const Navbar = () => {
-  const role = localStorage.getItem("userRole");
   const navigate = useNavigate();
-
-  const handleLogout = () => {
-    localStorage.clear();
-    navigate("/auth");
-    window.location.reload(); // Force refresh to clear the role state in the UI
-  };
 
   return (
     <nav className="flex justify-between items-center p-4 bg-white border-b sticky top-0 z-50">
@@ -17,56 +12,72 @@ const Navbar = () => {
       </Link>
 
       <div className="flex items-center space-x-6 font-medium text-sm">
-        {role === "business" ? (
-          // Business View
+        {/* ALWAYS SHOW EXPLORE */}
+        <NavLink
+          to="/explore"
+          className={({ isActive }) =>
+            isActive ? "text-blue-600" : "text-gray-600"
+          }
+        >
+          Explore
+        </NavLink>
+
+        {/* SHOW ONLY WHEN LOGGED IN */}
+        <SignedIn>
           <NavLink
-            to="/admin"
+            to="/my-queue"
             className={({ isActive }) =>
               isActive ? "text-blue-600" : "text-gray-600"
             }
           >
-            Business Dashboard
+            My Spots
           </NavLink>
-        ) : (
-          // Customer View
-          <>
-            <NavLink
-              to="/explore"
-              className={({ isActive }) =>
-                isActive ? "text-blue-600" : "text-gray-600"
-              }
-            >
-              Explore
-            </NavLink>
-            <NavLink
-              to="/my-queue"
-              className={({ isActive }) =>
-                isActive ? "text-blue-600" : "text-gray-600"
-              }
-            >
-              My Spots
-            </NavLink>
-          </>
-        )}
 
-        {/* Auth Toggle */}
-        {role ? (
-          <button
-            onClick={handleLogout}
-            className="text-red-500 hover:text-red-700 transition"
+          <UserButton
+            appearance={{
+              elements: {
+                userButtonPopoverCard: {
+                  width: "240px",
+                  maxWidth: "240px",
+                  borderRadius: "0.5rem",
+                  boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)",
+                },
+                userButtonMenuItem__manageAccount: {
+                  display: "none",
+                },
+                userButtonPopoverFooter: {
+                  display: "none",
+                },
+                userButtonAvatarBox: {
+                  border: "2px solid #3b82f6",
+                },
+              },
+            }}
           >
-            Logout
-          </button>
-        ) : (
+            <UserButton.MenuItems>
+              <UserButton.Action
+                label="My Profile"
+                labelIcon={<User size={16} />}
+                onClick={() => navigate("/profile")}
+              />
+              <UserButton.Action
+                label="Business Hub"
+                labelIcon={<LayoutDashboard size={16} />}
+                onClick={() => navigate("/admin")}
+              />
+            </UserButton.MenuItems>
+          </UserButton>
+        </SignedIn>
+
+        {/* SHOW ONLY WHEN LOGGED OUT */}
+        <SignedOut>
           <NavLink
             to="/login"
-            className={({ isActive }) =>
-              isActive ? "text-blue-600" : "text-gray-600"
-            }
+            className="bg-blue-500 !text-white p-2 rounded-lg hover:bg-blue-700 transition"
           >
             Login
           </NavLink>
-        )}
+        </SignedOut>
       </div>
     </nav>
   );
