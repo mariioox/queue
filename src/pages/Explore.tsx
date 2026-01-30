@@ -1,39 +1,40 @@
 import React, { useState, useEffect } from "react";
-import { supabase } from "../lib/supabaseClient"; // Make sure this path is correct
+import { supabase } from "../lib/supabaseClient";
 import ShopCard from "../components/ShopCard";
 import type { Shop } from "../types/queue";
+import { Loader2 } from "lucide-react";
 
 const Explore: React.FC = () => {
-  const [shops, setShops] = useState<Shop[]>([]); // Real data state
+  const [shops, setShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("All");
 
   const categories = ["All", "Barber", "Food", "Laundry", "Clinic", "Other"];
 
-  // --- FETCH DATA FROM SUPABASE ---
+  // FETCH DATA FROM SUPABASE
   useEffect(() => {
     const fetchShops = async () => {
       try {
         const { data, error } = await supabase
           .from("shops")
           .select(`*, bookings(count)`)
-          .eq("bookings.status", "waiting"); // Only count people currently waiting
+          .eq("bookings.status", "waiting"); // To count people currently waiting
 
         if (error) throw error;
 
         if (data) {
           const formattedShops: Shop[] = data.map((shop) => ({
-            id: shop.id, // Make sure this matches 'id' or 'iid' in your queue.ts
+            id: shop.id,
             name: shop.name,
             category: shop.category,
             location: shop.location,
             description: shop.description,
             image_url: shop.image_url,
             owner_id: shop.owner_id,
-            // Since these aren't in the DB yet, we provide defaults to satisfy the Interface
+            // Default before we add a change avgWaitMinutes function
             avgWaitMinutes: 15,
-            currentQueue: shop.bookings?.[0]?.count || 0, // Extract the count from the joined array
+            currentQueue: shop.bookings?.[0]?.count || 0,
           }));
           setShops(formattedShops);
         }
@@ -47,7 +48,7 @@ const Explore: React.FC = () => {
     fetchShops();
   }, []);
 
-  // Filter based on the 'shops' state instead of MOCK_SHOPS
+  // Filter based on the shop name and category
   const filteredShops = shops.filter((shop) => {
     const matchesSearch =
       shop.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -58,7 +59,14 @@ const Explore: React.FC = () => {
   });
 
   if (loading)
-    return <div className="p-10 text-center">Finding services...</div>;
+    return (
+      <div className="h-screen flex flex-col items-center justify-center gap-4">
+        <Loader2 className="animate-spin text-blue-600" size={40} />
+        <p className="text-gray-500 font-bold animate-pulse">
+          Finding Services...
+        </p>
+      </div>
+    );
 
   return (
     <div className="p-6 max-w-6xl mx-auto">

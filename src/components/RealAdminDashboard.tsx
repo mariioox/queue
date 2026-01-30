@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
-import type { Shop, Booking } from "../types/queue"; // Use Booking here
+import type { Shop, Booking } from "../types/queue";
 import { Users, Clock, Play, CheckCircle } from "lucide-react";
 
 const RealAdminDashboard = ({ shop }: { shop: Shop }) => {
-  // Use the real Booking type instead of the old Customer interface
   const [queue, setQueue] = useState<Booking[]>([]);
   const [currentCustomer, setCurrentCustomer] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
@@ -68,6 +67,7 @@ const RealAdminDashboard = ({ shop }: { shop: Shop }) => {
       .eq("id", nextPerson.id);
   };
 
+  // To remove current customer from queue
   const handleFinishSession = async () => {
     if (!currentCustomer) return;
     await supabase
@@ -81,8 +81,9 @@ const RealAdminDashboard = ({ shop }: { shop: Shop }) => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-700">
-      {/* Header section remains the same - it was good! */}
+      {/* Header section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        {/* Top right-Shop info */}
         <div className="flex items-center gap-4">
           <img
             src={shop.image_url}
@@ -101,6 +102,7 @@ const RealAdminDashboard = ({ shop }: { shop: Shop }) => {
             </p>
           </div>
         </div>
+        {/* Top left-Customer info */}
         <div className="flex gap-4">
           <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100 flex items-center gap-3">
             <div className="bg-blue-600 p-2 rounded-lg text-white">
@@ -128,6 +130,7 @@ const RealAdminDashboard = ({ shop }: { shop: Shop }) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* To handle current customer */}
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-gray-900 text-white p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
             <div className="relative z-10">
@@ -136,7 +139,6 @@ const RealAdminDashboard = ({ shop }: { shop: Shop }) => {
               </h3>
               {currentCustomer ? (
                 <div className="space-y-4">
-                  {/* CHANGED: customer_name instead of name */}
                   <h2 className="text-4xl font-black">
                     {currentCustomer.customer_name}
                   </h2>
@@ -175,6 +177,7 @@ const RealAdminDashboard = ({ shop }: { shop: Shop }) => {
           </div>
         </div>
 
+        {/* Waitlist Section */}
         <div className="lg:col-span-2">
           <div className="bg-white border border-gray-100 rounded-[2.5rem] shadow-sm overflow-hidden">
             <div className="p-6 border-b border-gray-50 flex justify-between items-center">
@@ -195,7 +198,6 @@ const RealAdminDashboard = ({ shop }: { shop: Shop }) => {
                         {index + 1}
                       </div>
                       <div>
-                        {/* CHANGED: customer_name instead of name */}
                         <p className="font-bold text-gray-900">
                           {customer.customer_name}
                         </p>
@@ -208,7 +210,6 @@ const RealAdminDashboard = ({ shop }: { shop: Shop }) => {
                         </p>
                       </div>
                     </div>
-                    {/* ... (buttons remain the same) */}
                   </div>
                 ))
               ) : (

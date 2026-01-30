@@ -12,15 +12,15 @@ const ShopDetails = () => {
 
   const [shop, setShop] = useState<Shop | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isJoining, setIsJoining] = useState(false); // New: track button loading state
+  const [isJoining, setIsJoining] = useState(false);
 
   useEffect(() => {
-    // Define it inside to satisfy the dependency rule
     const fetchShopData = async () => {
       if (!id) return;
       setLoading(true);
 
       try {
+        // To get shop data data
         const { data: shopData, error: shopError } = await supabase
           .from("shops")
           .select("*")
@@ -29,6 +29,7 @@ const ShopDetails = () => {
 
         if (shopError) throw shopError;
 
+        // To get count of people in queue
         const { count, error: countError } = await supabase
           .from("bookings")
           .select("*", { count: "exact", head: true })
@@ -60,7 +61,7 @@ const ShopDetails = () => {
     };
 
     fetchShopData();
-  }, [id]); // No warning now, because fetchShopData is created inside the effect
+  }, [id]);
 
   const handleJoinQueue = async () => {
     if (!user) {
@@ -71,7 +72,7 @@ const ShopDetails = () => {
     setIsJoining(true);
 
     try {
-      // 3. Prevent double joining
+      // To prevent double joining
       const { data: existing } = await supabase
         .from("bookings")
         .select("id")
@@ -86,12 +87,12 @@ const ShopDetails = () => {
         return;
       }
 
-      // 4. Insert into Database
+      // Insert into Database
       const { error } = await supabase.from("bookings").insert([
         {
           shop_id: id,
           user_id: user.id,
-          customer_name: user.fullName || user.username || "Guest",
+          customer_name: user.fullName || user.username,
           status: "waiting",
         },
       ]);
@@ -100,7 +101,7 @@ const ShopDetails = () => {
 
       navigate("/my-queue");
     } catch (error) {
-      const err = error as Error; // Fixed the 'any' error here
+      const err = error as Error;
       console.error("Join error:", err.message);
       alert("Could not join queue: " + err.message);
     } finally {
@@ -108,6 +109,7 @@ const ShopDetails = () => {
     }
   };
 
+  // Just a loading screen
   if (loading)
     return (
       <div className="h-screen flex flex-col items-center justify-center gap-4">
@@ -136,6 +138,7 @@ const ShopDetails = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
+      {/* Hero section */}
       <div className="relative h-64 md:h-96 w-full">
         <img
           src={shop.image_url}
@@ -153,6 +156,7 @@ const ShopDetails = () => {
 
       <div className="max-w-3xl mx-auto -mt-20 relative z-10 px-4">
         <div className="bg-white rounded-[3rem] shadow-2xl p-8 md:p-12 border border-gray-100">
+          {/* Shop Info. */}
           <div className="flex justify-between items-start mb-6">
             <div>
               <span className="bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg">
@@ -166,11 +170,11 @@ const ShopDetails = () => {
               </p>
             </div>
           </div>
-
+          {/* Shop Desc. */}
           <p className="text-gray-600 text-lg leading-relaxed mb-10 font-medium">
             {shop.description}
           </p>
-
+          {/* Shop's customer info- Ppl in line & Est. time */}
           <div className="grid grid-cols-2 gap-4 mb-10">
             <div className="bg-blue-50/50 p-6 rounded-[2rem] border border-blue-100">
               <Users className="text-blue-600 mb-2" size={28} />

@@ -11,6 +11,7 @@ const MyQueue: React.FC = () => {
   const [position, setPosition] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
+  // Get current position from supabase
   const fetchPosition = async (shopId: string, createdAt: string) => {
     const { count } = await supabase
       .from("bookings")
@@ -24,7 +25,7 @@ const MyQueue: React.FC = () => {
   useEffect(() => {
     if (!isLoaded || !user) return;
 
-    // 1. Initial Fetch
+    // Initial Fetch
     const getInitialData = async () => {
       const { data } = await supabase
         .from("bookings")
@@ -42,8 +43,7 @@ const MyQueue: React.FC = () => {
 
     getInitialData();
 
-    // 2. REAL-TIME SUBSCRIPTION
-    // Listen for ANY changes to the bookings table
+    // Listen for ANY changes to the bookings table in real time
     const channel = supabase
       .channel("schema-db-changes")
       .on(
@@ -79,9 +79,11 @@ const MyQueue: React.FC = () => {
     return (
       <div className="h-screen flex items-center justify-center">
         <Loader2 className="animate-spin text-blue-600" size={40} />
+        <p className="text-gray-500 font-bold animate-pulse">Loading...</p>
       </div>
     );
 
+  // Displays if User hasn't joined any queues yet
   if (!booking) {
     return (
       <div className="p-10 text-center mt-20 max-w-sm mx-auto">
@@ -149,7 +151,7 @@ const MyQueue: React.FC = () => {
         {/* Dotted Divider */}
         <div className="flex items-center px-4">
           <div className="w-8 h-8 rounded-full bg-gray-50 -ml-8 border-r border-gray-100"></div>
-          <div className="flex-1 border-t-4 border-dotted border-gray-100 mx-2"></div>
+          <div className="flex-1 border-t-4 border-dotted border-gray-300 mx-2"></div>
           <div className="w-8 h-8 rounded-full bg-gray-50 -mr-8 border-l border-gray-100"></div>
         </div>
 
@@ -179,7 +181,7 @@ const MyQueue: React.FC = () => {
 
           <button
             onClick={leaveQueue}
-            className="w-full flex items-center justify-center gap-2 text-red-500 font-black uppercase text-xs tracking-widest hover:bg-red-50 py-4 rounded-2xl transition-all"
+            className="w-full flex items-center justify-center gap-2 text-red-500 font-black bg-red-100 uppercase text-xs tracking-widest hover:bg-red-300 py-4 rounded-2xl transition-all"
           >
             <LogOut size={16} /> Leave Queue
           </button>
