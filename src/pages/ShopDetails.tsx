@@ -1,118 +1,212 @@
-import React from "react";
-import { useParams } from "react-router-dom";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabaseClient";
+import { Clock, MapPin, Users, ArrowLeft, Loader2 } from "lucide-react";
 import type { Shop } from "../types/queue";
-import { useNavigate } from "react-router-dom";
-import { useQueue } from "../hooks/useQueue";
+import { useUser } from "@clerk/clerk-react";
 
-const MOCK_SHOPS: Shop[] = [
-  {
-    id: "1",
-    name: "Sola Sharp Cuts",
-    category: "Barber",
-    description:
-      "Best fades in town. Professional services including hot towel shaves.",
-    currentQueue: 5,
-    avgWaitMinutes: 15,
-    imageUrl:
-      "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800",
-  },
-  {
-    id: "2",
-    name: "Mama J's Noodles",
-    category: "Food",
-    description: "Spicy instant noodles and local delicacies.",
-    currentQueue: 12,
-    avgWaitMinutes: 10,
-    imageUrl: "https://images.unsplash.com/photo-1552611052-33e04de081de?w=800",
-  },
-  {
-    id: "3",
-    name: "Lagos Central Maternal Clinic",
-    category: "Other", // You could add 'Clinic' to your Category type in queue.ts
-    description: "Specialized postnatal check-ups and newborn immunizations.",
-    currentQueue: 8,
-    avgWaitMinutes: 20,
-    imageUrl:
-      "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800",
-  },
-];
-
-const ShopDetail: React.FC = () => {
-  const { shopId } = useParams<{ shopId: string }>();
-
-  // Find the specific shop using the ID from the URL
-  const shop = MOCK_SHOPS.find((s) => s.id === shopId);
-
-  const { joinQueue } = useQueue();
+const ShopDetails = () => {
+  const { user } = useUser();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const handleJoin = () => {
-    if (shop) {
-      joinQueue(shop.id, shop.name, shop.avgWaitMinutes);
-      navigate("/my-queue"); // Redirect to see the ticket
+  const [shop, setShop] = useState<Shop | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isJoining, setIsJoining] = useState(false); // New: track button loading state
+
+  useEffect(() => {
+    // Define it inside to satisfy the dependency rule
+    const fetchShopData = async () => {
+      if (!id) return;
+      setLoading(true);
+
+      try {
+        const { data: shopData, error: shopError } = await supabase
+          .from("shops")
+          .select("*")
+          .eq("id", id)
+          .single();
+
+        if (shopError) throw shopError;
+
+        const { count, error: countError } = await supabase
+          .from("bookings")
+          .select("*", { count: "exact", head: true })
+          .eq("shop_id", id)
+          .eq("status", "waiting");
+
+        if (countError) throw countError;
+
+        if (shopData) {
+          setShop({
+            id: shopData.id,
+            name: shopData.name,
+            category: shopData.category,
+            location: shopData.location,
+            description: shopData.description,
+            image_url: shopData.image_url,
+            owner_id: shopData.owner_id,
+            avgWaitMinutes: 15,
+            currentQueue: count || 0,
+          });
+        }
+      } catch (error) {
+        const err = error as Error;
+        console.error("Fetch error:", err.message);
+        setShop(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchShopData();
+  }, [id]); // No warning now, because fetchShopData is created inside the effect
+
+  const handleJoinQueue = async () => {
+    if (!user) {
+      alert("Please sign in to join the queue!");
+      return;
+    }
+
+    setIsJoining(true);
+
+    try {
+      // 3. Prevent double joining
+      const { data: existing } = await supabase
+        .from("bookings")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("shop_id", id)
+        .in("status", ["waiting", "serving"])
+        .maybeSingle();
+
+      if (existing) {
+        alert("You are already in line for this shop!");
+        navigate("/my-queue");
+        return;
+      }
+
+      // 4. Insert into Database
+      const { error } = await supabase.from("bookings").insert([
+        {
+          shop_id: id,
+          user_id: user.id,
+          customer_name: user.fullName || user.username || "Guest",
+          status: "waiting",
+        },
+      ]);
+
+      if (error) throw error;
+
+      navigate("/my-queue");
+    } catch (error) {
+      const err = error as Error; // Fixed the 'any' error here
+      console.error("Join error:", err.message);
+      alert("Could not join queue: " + err.message);
+    } finally {
+      setIsJoining(false);
     }
   };
 
-  if (!shop) {
+  if (loading)
     return (
-      <div className="p-10 text-center">
-        <h2 className="text-2xl font-bold">Shop not found</h2>
-        <Link to="/explore" className="text-blue-600 underline">
-          Go back to Explore
-        </Link>
+      <div className="h-screen flex flex-col items-center justify-center gap-4">
+        <Loader2 className="animate-spin text-blue-600" size={40} />
+        <p className="text-gray-500 font-bold animate-pulse">LOADING SHOP...</p>
       </div>
     );
-  }
+
+  if (!shop)
+    return (
+      <div className="p-10 text-center">
+        <h2 className="text-2xl font-black text-red-500 uppercase">
+          Shop Not Found
+        </h2>
+        <p className="text-gray-500 mb-6">
+          The shop you are looking for doesn't exist or was removed.
+        </p>
+        <button
+          onClick={() => navigate("/explore")}
+          className="bg-gray-900 text-white px-8 py-3 rounded-2xl font-bold"
+        >
+          Return to Explore
+        </button>
+      </div>
+    );
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <div className="rounded-xl overflow-hidden bg-gray-100 mb-6">
+    <div className="min-h-screen bg-gray-50 pb-20">
+      <div className="relative h-64 md:h-96 w-full">
         <img
-          src={shop.imageUrl}
+          src={shop.image_url}
           alt={shop.name}
-          className="w-full h-64 object-cover"
+          className="w-full h-full object-cover"
         />
-      </div>
-
-      <div className="flex justify-between items-start mb-6">
-        <div>
-          <h1 className="text-4xl font-bold">{shop.name}</h1>
-          <p className="text-gray-600 text-lg">
-            {shop.category} • Professional Service
-          </p>
-        </div>
-        <div className="bg-green-100 text-green-800 px-4 py-2 rounded-full font-bold">
-          Open
-        </div>
-      </div>
-
-      <div className="bg-white border rounded-xl p-6 shadow-sm mb-8">
-        <div className="flex justify-around text-center mb-6">
-          <div>
-            <p className="text-gray-500 text-sm">People Waiting</p>
-            <p className="text-2xl font-bold">{shop.currentQueue}</p>
-          </div>
-          <div className="border-l border-r px-8">
-            <p className="text-gray-500 text-sm">Est. Wait Time</p>
-            <p className="text-2xl font-bold text-blue-600">
-              {shop.currentQueue * shop.avgWaitMinutes} Mins
-            </p>
-          </div>
-        </div>
-
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
         <button
-          onClick={handleJoin}
-          className="w-full bg-black text-white text-lg font-bold py-4 rounded-xl hover:bg-gray-800 transition"
+          onClick={() => navigate(-1)}
+          className="absolute top-6 left-6 bg-white/20 backdrop-blur-xl p-3 rounded-2xl text-white hover:bg-white/40 transition-all"
         >
-          Join the Queue
+          <ArrowLeft size={24} />
         </button>
       </div>
 
-      <h2 className="text-xl font-bold mb-2">About</h2>
-      <p className="text-gray-700 leading-relaxed">{shop.description}</p>
+      <div className="max-w-3xl mx-auto -mt-20 relative z-10 px-4">
+        <div className="bg-white rounded-[3rem] shadow-2xl p-8 md:p-12 border border-gray-100">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <span className="bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg">
+                {shop.category}
+              </span>
+              <h1 className="text-4xl md:text-5xl font-black text-gray-900 mt-4 uppercase tracking-tighter leading-none">
+                {shop.name}
+              </h1>
+              <p className="text-gray-500 font-bold mt-4 flex items-center gap-2">
+                <MapPin size={18} className="text-blue-500" /> {shop.location}
+              </p>
+            </div>
+          </div>
+
+          <p className="text-gray-600 text-lg leading-relaxed mb-10 font-medium">
+            {shop.description}
+          </p>
+
+          <div className="grid grid-cols-2 gap-4 mb-10">
+            <div className="bg-blue-50/50 p-6 rounded-[2rem] border border-blue-100">
+              <Users className="text-blue-600 mb-2" size={28} />
+              <p className="text-xs font-black text-blue-600/50 uppercase tracking-widest">
+                In Line
+              </p>
+              <p className="text-3xl font-black text-gray-900">
+                {shop.currentQueue}
+              </p>
+            </div>
+            <div className="bg-green-50/50 p-6 rounded-[2rem] border border-green-100">
+              <Clock className="text-green-600 mb-2" size={28} />
+              <p className="text-xs font-black text-green-600/50 uppercase tracking-widest">
+                Est. Wait
+              </p>
+              <p className="text-3xl font-black text-gray-900">
+                {shop.currentQueue * 15}m
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={handleJoinQueue}
+            disabled={isJoining}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white py-6 rounded-[2rem] font-black text-xl shadow-xl shadow-blue-200 transition-all active:scale-95 flex items-center justify-center gap-3"
+          >
+            {isJoining ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              "JOIN THE QUEUE"
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
 
-export default ShopDetail;
+export default ShopDetails;

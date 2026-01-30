@@ -20,7 +20,7 @@ function App() {
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/explore" element={<Explore />} />
-        <Route path="/shop/:shopId" element={<ShopDetail />} />
+        <Route path="/shop/:id" element={<ShopDetail />} />
 
         {/* Clerk Auth Routes (Using Clerk's built-in UI) */}
         <Route path="/login/*" element={<Login />} />

@@ -3,16 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import BusinessOnboarding from "../components/BusinessOnboarding";
 import RealAdminDashboard from "../components/RealAdminDashboard";
-
-interface Shop {
-  id: string;
-  name: string;
-  category: string;
-  location: string;
-  description: string;
-  image_url: string;
-  owner_id: string;
-}
+import type { Shop } from "../types/queue";
 
 export const AdminDash = () => {
   const { user, isLoaded } = useUser();

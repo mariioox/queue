@@ -145,9 +145,10 @@ const BusinessOnboarding = ({ onComplete }: OnboardingProps) => {
               }
             >
               <option>Barbershop</option>
-              <option>Salon</option>
+              <option>Laundry</option>
               <option>Clinic</option>
-              <option>Restaurant</option>
+              <option>Food</option>
+              <option>Other</option>
             </select>
             <div className="relative">
               <MapPin
