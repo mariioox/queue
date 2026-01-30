@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useUser } from "@clerk/clerk-react"; // To get the owner's ID
+import { supabase } from "../lib/supabaseClient"; // To send data to the backend
 import {
   Store,
   MapPin,
@@ -13,6 +15,7 @@ interface OnboardingProps {
 }
 
 const BusinessOnboarding = ({ onComplete }: OnboardingProps) => {
+  const { user } = useUser(); // This gives us user.id, user.fullName, etc.
   const [step, setStep] = useState(1);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -34,11 +37,45 @@ const BusinessOnboarding = ({ onComplete }: OnboardingProps) => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    // Logic for image upload goes here
-    console.log("Saving Shop with Image:", { ...formData, imageFile });
-    onComplete();
+  const handleSubmit = async () => {
+    if (!user || !imageFile) return;
+
+    try {
+      // 1. Upload Image
+      const fileName = `${user.id}-${Date.now()}`;
+      const { error: uploadError } = await supabase.storage
+        .from("shop-images")
+        .upload(fileName, imageFile);
+
+      if (uploadError) throw uploadError;
+
+      // 2. Get the specific string URL
+      const { data: urlData } = supabase.storage
+        .from("shop-images")
+        .getPublicUrl(fileName);
+
+      const publicUrl = urlData.publicUrl; // This is the string you noticed!
+
+      // 3. Insert into Database
+      const { error: dbError } = await supabase.from("shops").insert([
+        {
+          owner_id: user.id,
+          name: formData.name,
+          category: formData.category,
+          location: formData.location,
+          description: formData.description,
+          image_url: publicUrl, // Saving the string link
+        },
+      ]);
+
+      if (dbError) throw dbError;
+
+      // 4. Tell the parent we are done!
+      onComplete();
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Failed to create business.");
+    }
   };
 
   return (
@@ -253,7 +290,7 @@ const BusinessOnboarding = ({ onComplete }: OnboardingProps) => {
               Back
             </button>
             <button
-              onClick={handleSubmit}
+              onClick={() => handleSubmit()}
               className="flex-[2] bg-blue-600 text-white py-4 rounded-2xl font-bold text-lg hover:bg-blue-700 shadow-lg shadow-blue-100 flex items-center justify-center gap-2"
             >
               <CheckCircle2 size={20} /> Create Business

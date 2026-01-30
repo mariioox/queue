@@ -14,8 +14,17 @@ interface Customer {
   time: string;
   status: string;
 }
+interface Shop {
+  id: string;
+  name: string;
+  category: string;
+  location: string;
+  description: string;
+  image_url: string;
+  owner_id: string;
+}
 
-const RealAdminDashboard = () => {
+const RealAdminDashboard = ({ shop }: { shop: Shop }) => {
   // Mock data for the queue - before backend completion
   const [queue, setQueue] = useState<Customer[]>([
     { id: 1, name: "Jordan Smith", time: "10:15 AM", status: "waiting" },
@@ -39,12 +48,27 @@ const RealAdminDashboard = () => {
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-700">
       {/* Header & Quick Stats */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-black tracking-tight">Shop Manager</h1>
-          <p className="text-gray-500 font-medium">
-            Manage your live queue and customers.
-          </p>
+        <div className="flex items-center gap-4">
+          {/* Show the real Shop Image */}
+          <img
+            src={shop.image_url}
+            className="w-20 h-20 rounded-[1.5rem] object-cover border-4 border-white shadow-md"
+            alt={shop.name}
+          />
+          <div>
+            {/* Show the real Shop Name */}
+            <h1 className="text-3xl font-black tracking-tight uppercase">
+              {shop.name}
+            </h1>
+            <p className="text-gray-500 font-bold flex items-center gap-2">
+              <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs uppercase">
+                {shop.category}
+              </span>
+              • {shop.location}
+            </p>
+          </div>
         </div>
+
         <div className="flex gap-4">
           <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100 flex items-center gap-3">
             <div className="bg-blue-600 p-2 rounded-lg text-white">
