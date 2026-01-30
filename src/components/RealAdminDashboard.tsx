@@ -14,6 +14,7 @@ interface Customer {
   time: string;
   status: string;
 }
+
 interface Shop {
   id: string;
   name: string;
@@ -55,8 +56,8 @@ const RealAdminDashboard = ({ shop }: { shop: Shop }) => {
             className="w-20 h-20 rounded-[1.5rem] object-cover border-4 border-white shadow-md"
             alt={shop.name}
           />
+          {/* Show the real Shop Name */}
           <div>
-            {/* Show the real Shop Name */}
             <h1 className="text-3xl font-black tracking-tight uppercase">
               {shop.name}
             </h1>
@@ -69,7 +70,9 @@ const RealAdminDashboard = ({ shop }: { shop: Shop }) => {
           </div>
         </div>
 
+        {/* Top right corner */}
         <div className="flex gap-4">
+          {/* Number of waiting customers */}
           <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100 flex items-center gap-3">
             <div className="bg-blue-600 p-2 rounded-lg text-white">
               <Users size={20} />
@@ -81,6 +84,8 @@ const RealAdminDashboard = ({ shop }: { shop: Shop }) => {
               <p className="text-xl font-black">{queue.length}</p>
             </div>
           </div>
+
+          {/* Estimated service time for all customers */}
           <div className="bg-green-50 p-4 rounded-2xl border border-green-100 flex items-center gap-3">
             <div className="bg-green-600 p-2 rounded-lg text-white">
               <Clock size={20} />

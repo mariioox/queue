@@ -23,14 +23,14 @@ export const AdminDash = () => {
     const initializeAdmin = async () => {
       if (!isLoaded || !user) return;
 
-      // A. Sync the Profile first (The Handshake)
+      // Sync the profile first with Clerk
       await supabase.from("profiles").upsert({
         id: user.id,
         full_name: user.fullName,
         avatar_url: user.imageUrl,
       });
 
-      // B. Check if they already have a shop
+      // Check if profile already has a shop
       const { data } = await supabase
         .from("shops")
         .select("*")
@@ -44,7 +44,7 @@ export const AdminDash = () => {
     initializeAdmin();
   }, [user, isLoaded]);
 
-  // This prevents the blank screen and handles your logic
+  // To prevents the blank screen and handles your loading
   if (!isLoaded || checking) {
     return (
       <div className="flex h-screen items-center justify-center">

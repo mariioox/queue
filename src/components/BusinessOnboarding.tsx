@@ -15,7 +15,7 @@ interface OnboardingProps {
 }
 
 const BusinessOnboarding = ({ onComplete }: OnboardingProps) => {
-  const { user } = useUser(); // This gives us user.id, user.fullName, etc.
+  const { user } = useUser(); // This gives the user.id, user.fullName, etc from Clerk.
   const [step, setStep] = useState(1);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -41,7 +41,7 @@ const BusinessOnboarding = ({ onComplete }: OnboardingProps) => {
     if (!user || !imageFile) return;
 
     try {
-      // 1. Upload Image
+      // Uploading Image
       const fileName = `${user.id}-${Date.now()}`;
       const { error: uploadError } = await supabase.storage
         .from("shop-images")
@@ -49,14 +49,14 @@ const BusinessOnboarding = ({ onComplete }: OnboardingProps) => {
 
       if (uploadError) throw uploadError;
 
-      // 2. Get the specific string URL
+      // Get the specific string URL
       const { data: urlData } = supabase.storage
         .from("shop-images")
         .getPublicUrl(fileName);
 
-      const publicUrl = urlData.publicUrl; // This is the string you noticed!
+      const publicUrl = urlData.publicUrl;
 
-      // 3. Insert into Database
+      // Insert into Database
       const { error: dbError } = await supabase.from("shops").insert([
         {
           owner_id: user.id,
@@ -70,7 +70,6 @@ const BusinessOnboarding = ({ onComplete }: OnboardingProps) => {
 
       if (dbError) throw dbError;
 
-      // 4. Tell the parent we are done!
       onComplete();
     } catch (error) {
       console.error("Error:", error);
