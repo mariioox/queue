@@ -144,7 +144,7 @@ const BusinessOnboarding = ({ onComplete }: OnboardingProps) => {
                 setFormData({ ...formData, category: e.target.value })
               }
             >
-              <option>Barbershop</option>
+              <option>Barber</option>
               <option>Laundry</option>
               <option>Clinic</option>
               <option>Food</option>
