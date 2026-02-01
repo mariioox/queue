@@ -10,6 +10,7 @@ import UserProfilePage from "./pages/UserProfile";
 import { Routes, Route } from "react-router-dom";
 import { AdminDash } from "./pages/AdminDashboard";
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
+import Footer from "./components/Footer";
 // ... import other pages
 
 function App() {
@@ -78,6 +79,7 @@ function App() {
 
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <Footer />
     </>
   );
 }

@@ -1,6 +1,6 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
-import { LayoutDashboard, User } from "lucide-react";
+import { LayoutDashboard } from "lucide-react";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -55,11 +55,6 @@ const Navbar = () => {
             }}
           >
             <UserButton.MenuItems>
-              <UserButton.Action
-                label="My Profile"
-                labelIcon={<User size={16} />}
-                onClick={() => navigate("/profile")}
-              />
               <UserButton.Action
                 label="Business Hub"
                 labelIcon={<LayoutDashboard size={16} />}
