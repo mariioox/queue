@@ -17,6 +17,7 @@ const Login = () => {
           routing="path"
           path="/login"
           signUpUrl="/signup"
+          forceRedirectUrl="/explore"
           appearance={{
             elements: {
               card: {
