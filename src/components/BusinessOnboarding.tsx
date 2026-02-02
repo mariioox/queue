@@ -21,7 +21,7 @@ const BusinessOnboarding = ({ onComplete }: OnboardingProps) => {
   const [preview, setPreview] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
-    category: "Barbershop",
+    category: "",
     location: "",
     description: "",
   });
