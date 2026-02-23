@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useUser } from "@clerk/clerk-react"; // To get the owner's ID
-import { supabase } from "../lib/supabaseClient"; // To send data to the backend
+import { useUser } from "@clerk/clerk-react";
+import { supabase } from "../lib/supabaseClient";
 import {
   Store,
   MapPin,

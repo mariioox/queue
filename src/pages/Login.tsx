@@ -12,7 +12,7 @@ const Login = () => {
       </div>
 
       <div className="pl-5 w-full max-w-md">
-        {/* Clerk component properly edited to match our UI */}
+        {/* Edited clerk component to match our UI */}
         <SignIn
           routing="path"
           path="/login"
