@@ -50,7 +50,7 @@ export const AdminDash = () => {
         // Pass the shop data as a prop
         <RealAdminDashboard shop={shop} />
       ) : (
-        // On success, we just reload to trigger the fetch
+        // On success, reloading the page to trigger the fetch
         <BusinessOnboarding onComplete={() => window.location.reload()} />
       )}
     </div>
