@@ -1,8 +1,9 @@
 import "./index.css";
 import App from "./App.tsx";
-import { QueueProvider } from "./context/QueueProvider.tsx";
 import { BrowserRouter } from "react-router-dom";
 import { ClerkProvider } from "@clerk/clerk-react";
+import { ThemeProvider } from "./components/ThemeProvider";
+import SessionProvider from "./components/SessionProvider";
 import React from "react";
 import ReactDOM from "react-dom/client";
 
@@ -15,11 +16,13 @@ if (!PUBLISHABLE_KEY) {
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
-      <QueueProvider>
+      <ThemeProvider>
         <BrowserRouter>
-          <App />
+          <SessionProvider>
+            <App />
+          </SessionProvider>
         </BrowserRouter>
-      </QueueProvider>
+      </ThemeProvider>
     </ClerkProvider>
   </React.StrictMode>,
 );

@@ -2,98 +2,154 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import ShopCard from "../components/ShopCard";
 import type { Shop } from "../types/queue";
-import { Loader2 } from "lucide-react";
+import { Search, AlertTriangle } from "lucide-react";
+import { Button, EmptyState, Input, QueueLoader } from "../components/ui";
+import { SHOP_CATEGORIES } from "../lib/constants";
+import { filterShops } from "../lib/shops";
+import { DEFAULT_WAIT_MINUTES } from "../lib/wait";
 
 const Explore: React.FC = () => {
   const [shops, setShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("All");
 
-  const categories = ["All", "Barber", "Food", "Laundry", "Clinic", "Other"];
+  const categories = ["All", ...SHOP_CATEGORIES];
 
   // FETCH DATA FROM SUPABASE
   useEffect(() => {
+    let cancelled = false;
+
     const fetchShops = async () => {
       try {
-        const { data, error } = await supabase
+        const { data: shopsData, error: shopsError } = await supabase
           .from("shops")
-          .select(`*, bookings(count)`)
-          .eq("bookings.status", "waiting"); // To count people currently waiting
+          .select("*");
+        if (shopsError) throw shopsError;
 
-        if (error) throw error;
+        // Waiting-count per shop (public RPC — anon can't read bookings)
+        const { data: countRows, error: countError } = await supabase.rpc(
+          "shop_waiting_counts",
+        );
+        if (countError) throw countError;
+        if (cancelled || !shopsData) return;
 
-        if (data) {
-          const formattedShops: Shop[] = data.map((shop) => ({
-            id: shop.id,
-            name: shop.name,
-            category: shop.category,
-            location: shop.location,
-            description: shop.description,
-            image_url: shop.image_url,
-            owner_id: shop.owner_id,
-            // Default before we add a change avgWaitMinutes function
-            avgWaitMinutes: 15,
-            currentQueue: shop.bookings?.[0]?.count || 0,
-          }));
-          setShops(formattedShops);
-        }
+        const counts = new Map<string, number>();
+        (countRows ?? []).forEach(
+          (row: { shop_id: string; waiting_count: number }) =>
+            counts.set(row.shop_id, Number(row.waiting_count)),
+        );
+
+        const formattedShops: Shop[] = shopsData.map((shop: Partial<Shop>) => ({
+          id: shop.id!,
+          name: shop.name!,
+          category: shop.category!,
+          location: shop.location!,
+          description: shop.description!,
+          image_url: shop.image_url!,
+          owner_id: shop.owner_id!,
+          avgWaitMinutes: DEFAULT_WAIT_MINUTES,
+          currentQueue: counts.get(shop.id!) || 0,
+        }));
+
+        setShops(formattedShops);
+        setLoadError(null);
       } catch (err) {
-        console.error("Error fetching shops:", err);
+        if (!cancelled)
+          setLoadError(
+            err instanceof Error ? err.message : "Could not load shops.",
+          );
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     fetchShops();
-  }, []);
+
+    // Live-refresh queue counts
+    const channel = supabase
+      .channel("explore-queue-counts")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "bookings" },
+        () => fetchShops(),
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, [reloadKey]);
 
   // Filter based on the shop name and category
-  const filteredShops = shops.filter((shop) => {
-    const matchesSearch =
-      shop.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      shop.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory =
-      activeCategory === "All" || shop.category === activeCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const filteredShops = filterShops(shops, searchQuery, activeCategory);
 
   if (loading)
     return (
-      <div className="h-screen flex flex-col items-center justify-center gap-4">
-        <Loader2 className="animate-spin text-blue-600" size={40} />
-        <p className="text-gray-500 font-bold animate-pulse">
-          Finding Services...
-        </p>
+      <div className="min-h-screen flex items-center justify-center">
+        <QueueLoader label="Finding services…" />
+      </div>
+    );
+
+  if (loadError)
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-6">
+        <EmptyState
+          icon={<AlertTriangle size={36} />}
+          title="Couldn't load shops"
+          description={loadError}
+          action={
+            <Button
+              onClick={() => {
+                setLoading(true);
+                setReloadKey((k) => k + 1);
+              }}
+            >
+              Try again
+            </Button>
+          }
+        />
       </div>
     );
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-6 max-w-6xl mx-auto min-h-screen">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-4 text-gray-900">
-          Find a Service
+        <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-accent font-bold mb-2">
+          Directory
+        </p>
+        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-ink mb-6">
+          Find a service
         </h1>
 
         {/* Search Bar */}
-        <input
-          type="text"
-          placeholder="Search for barbers, clinics, etc..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full p-3 border rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 outline-none mb-4"
-        />
+        <div className="relative mb-5">
+          <Search
+            size={16}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted"
+          />
+          <Input
+            type="text"
+            placeholder="Search for barbers, clinics, etc..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
 
         {/* Category Pills */}
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex gap-2 overflow-x-auto pb-2">
           {categories.map((category) => (
             <button
               key={category}
               onClick={() => setActiveCategory(category)}
-              className={`px-4 py-2 rounded-full whitespace-nowrap border transition-all ${
+              className={`px-4 py-2 rounded-lg whitespace-nowrap border font-mono text-[11px] uppercase tracking-[0.14em] font-bold transition-all ${
                 activeCategory === category
-                  ? "bg-blue-600 text-white border-blue-600 shadow-md"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-blue-300"
+                  ? "bg-ink text-canvas border-ink"
+                  : "bg-card text-ink-muted border-line hover:border-ink hover:text-ink"
               }`}
             >
               {category}
@@ -108,7 +164,7 @@ const Explore: React.FC = () => {
           filteredShops.map((shop) => <ShopCard key={shop.id} shop={shop} />)
         ) : (
           <div className="col-span-full text-center py-20">
-            <p className="text-gray-400 text-lg">
+            <p className="text-ink-muted font-medium text-lg">
               No services found matching your criteria.
             </p>
           </div>

@@ -1,46 +1,53 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
-import { LayoutDashboard } from "lucide-react";
+import { LayoutDashboard, Ticket } from "lucide-react";
+import ThemeToggle from "./ThemeToggle";
+import { buttonClasses } from "./ui";
+
+const linkClasses = ({ isActive }: { isActive: boolean }) =>
+  [
+    "font-mono text-xs uppercase tracking-[0.14em] font-bold pb-1 border-b-2 transition-colors",
+    isActive ? "border-accent text-ink" : "border-transparent text-ink-muted hover:text-ink",
+  ].join(" ");
 
 const Navbar = () => {
   const navigate = useNavigate();
 
   return (
-    <nav className="flex justify-between items-center p-4 bg-white border-b sticky top-0 z-50">
-      <Link to="/" className="text-2xl font-black tracking-tighter">
+    <nav className="flex justify-between items-center px-4 md:px-6 h-16 bg-canvas/90 backdrop-blur border-b-2 border-ink sticky top-0 z-50">
+      <Link
+        to="/"
+        className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-ink"
+      >
+        <span className="bg-accent text-on-accent p-1 rounded">
+          <Ticket size={18} strokeWidth={2.5} />
+        </span>
         Q-LINE
       </Link>
 
-      <div className="flex items-center space-x-6 font-medium text-sm">
-        {/* ALWAYS SHOW EXPLORE */}
-        <NavLink
-          to="/explore"
-          className={({ isActive }) =>
-            isActive ? "text-blue-600" : "text-gray-600"
-          }
-        >
+      <div className="flex items-center gap-5 md:gap-6">
+        <NavLink to="/explore" className={linkClasses}>
           Explore
         </NavLink>
 
-        {/* SHOW ONLY WHEN LOGGED IN */}
         <SignedIn>
-          <NavLink
-            to="/my-queue"
-            className={({ isActive }) =>
-              isActive ? "text-blue-600" : "text-gray-600"
-            }
-          >
+          <NavLink to="/my-queue" className={linkClasses}>
             My Spots
           </NavLink>
+        </SignedIn>
 
+        <ThemeToggle />
+
+        <SignedIn>
           <UserButton
             appearance={{
               elements: {
                 userButtonPopoverCard: {
                   width: "240px",
                   maxWidth: "240px",
-                  borderRadius: "0.5rem",
-                  boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)",
+                  borderRadius: "0.75rem",
+                  border: "1px solid var(--line)",
+                  backgroundColor: "var(--card)",
                 },
                 userButtonMenuItem__manageAccount: {
                   display: "none",
@@ -49,7 +56,7 @@ const Navbar = () => {
                   display: "none",
                 },
                 userButtonAvatarBox: {
-                  border: "2px solid #3b82f6",
+                  border: "2px solid var(--accent)",
                 },
               },
             }}
@@ -64,12 +71,8 @@ const Navbar = () => {
           </UserButton>
         </SignedIn>
 
-        {/* SHOW ONLY WHEN LOGGED OUT */}
         <SignedOut>
-          <NavLink
-            to="/login"
-            className="bg-blue-500 !text-white p-2 rounded-lg hover:bg-blue-700 transition"
-          >
+          <NavLink to="/login" className={buttonClasses("primary", "sm")}>
             Login
           </NavLink>
         </SignedOut>
