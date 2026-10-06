@@ -1,5 +1,3 @@
-export type Category = 'Barber' | 'Food' | 'Laundry' | 'Clinic' |'Other';
-
 export interface Shop {
   id: string;
   name: string;
@@ -10,14 +8,6 @@ export interface Shop {
   image_url: string;
   owner_id: string;
   currentQueue: number;
-}
-
-export interface QueueTicket {
-  shopId: string;
-  shopName: string;
-  position: number;
-  estimatedWait: number;
-  joinedAt: Date;
 }
 
 export interface Booking {

@@ -1,12 +1,17 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
-import { Clock, MapPin, Users, ArrowLeft, Loader2 } from "lucide-react";
+import { Clock, MapPin, Users, ArrowLeft, Ticket } from "lucide-react";
 import type { Shop } from "../types/queue";
 import { useUser } from "@clerk/clerk-react";
+import { toast } from "sonner";
+import { Badge, Button, EmptyState, QueueLoader } from "../components/ui";
+import { DEFAULT_WAIT_MINUTES, estimateWaitMinutes } from "../lib/wait";
+import { useSessionReady } from "../lib/session-context";
 
 const ShopDetails = () => {
   const { user } = useUser();
+  const ready = useSessionReady();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -30,11 +35,10 @@ const ShopDetails = () => {
         if (shopError) throw shopError;
 
         // To get count of people in queue
-        const { count, error: countError } = await supabase
-          .from("bookings")
-          .select("*", { count: "exact", head: true })
-          .eq("shop_id", id)
-          .eq("status", "waiting");
+        const { data: waiting, error: countError } = await supabase.rpc(
+          "queue_counts",
+          { p_shop_id: id },
+        );
 
         if (countError) throw countError;
 
@@ -47,13 +51,13 @@ const ShopDetails = () => {
             description: shopData.description,
             image_url: shopData.image_url,
             owner_id: shopData.owner_id,
-            avgWaitMinutes: 15,
-            currentQueue: count || 0,
+            avgWaitMinutes: DEFAULT_WAIT_MINUTES,
+            currentQueue: Number(waiting ?? 0),
           });
         }
       } catch (error) {
         const err = error as Error;
-        console.error("Fetch error:", err.message);
+        toast.error("Couldn't load the shop", { description: err.message });
         setShop(null);
       } finally {
         setLoading(false);
@@ -63,9 +67,47 @@ const ShopDetails = () => {
     fetchShopData();
   }, [id]);
 
+  // Live queue count: refetch whenever this shop's bookings change
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchQueueCount = async () => {
+      const { data, error } = await supabase.rpc("queue_counts", {
+        p_shop_id: id,
+      });
+      if (error || data === null) return;
+      setShop((prev) =>
+        prev ? { ...prev, currentQueue: Number(data) } : prev,
+      );
+    };
+
+    const channel = supabase
+      .channel(`shop-count-${id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "bookings",
+          filter: `shop_id=eq.${id}`,
+        },
+        () => fetchQueueCount(),
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id]);
+
   const handleJoinQueue = async () => {
     if (!user) {
-      alert("Please sign in to join the queue!");
+      toast.info("Sign in to join the queue");
+      navigate("/login");
+      return;
+    }
+    if (!ready) {
+      toast.info("Just a moment — finishing sign-in…");
       return;
     }
 
@@ -82,28 +124,26 @@ const ShopDetails = () => {
         .maybeSingle();
 
       if (existing) {
-        alert("You are already in line for this shop!");
+        toast.warning("You're already in line for this shop");
         navigate("/my-queue");
         return;
       }
 
-      // Insert into Database
-      const { error } = await supabase.from("bookings").insert([
-        {
-          shop_id: id,
-          user_id: user.id,
-          customer_name: user.fullName || user.username,
-          status: "waiting",
-        },
-      ]);
+      // Insert via security-definer RPC (enforces one active booking per user+shop)
+      const { error } = await supabase.rpc("join_queue", {
+        p_shop_id: id,
+        p_customer_name: user.fullName || user.username,
+      });
 
       if (error) throw error;
 
+      toast.success("You're in line!", {
+        description: "Track your spot under My Spots.",
+      });
       navigate("/my-queue");
     } catch (error) {
       const err = error as Error;
-      console.error("Join error:", err.message);
-      alert("Could not join queue: " + err.message);
+      toast.error("Could not join the queue", { description: err.message });
     } finally {
       setIsJoining(false);
     }
@@ -112,32 +152,29 @@ const ShopDetails = () => {
   // Just a loading screen
   if (loading)
     return (
-      <div className="h-screen flex flex-col items-center justify-center gap-4">
-        <Loader2 className="animate-spin text-blue-600" size={40} />
-        <p className="text-gray-500 font-bold animate-pulse">LOADING SHOP...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <QueueLoader label="Loading shop…" />
       </div>
     );
 
   if (!shop)
     return (
-      <div className="p-10 text-center">
-        <h2 className="text-2xl font-black text-red-500 uppercase">
-          Shop Not Found
-        </h2>
-        <p className="text-gray-500 mb-6">
-          The shop you are looking for doesn't exist or was removed.
-        </p>
-        <button
-          onClick={() => navigate("/explore")}
-          className="bg-gray-900 text-white px-8 py-3 rounded-2xl font-bold"
-        >
-          Return to Explore
-        </button>
+      <div className="min-h-screen flex flex-col items-center justify-center p-6">
+        <EmptyState
+          icon={<Ticket size={34} />}
+          title="Shop not found"
+          description="The shop you're looking for doesn't exist or was removed."
+          action={
+            <Button variant="outline" onClick={() => navigate("/explore")}>
+              Return to Explore
+            </Button>
+          }
+        />
       </div>
     );
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-canvas pb-20">
       {/* Hero section */}
       <div className="relative h-64 md:h-96 w-full">
         <img
@@ -145,68 +182,66 @@ const ShopDetails = () => {
           alt={shop.name}
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
         <button
           onClick={() => navigate(-1)}
-          className="absolute top-6 left-6 bg-white/20 backdrop-blur-xl p-3 rounded-2xl text-white hover:bg-white/40 transition-all"
+          aria-label="Go back"
+          className="absolute top-6 left-6 bg-canvas/90 backdrop-blur border-2 border-ink p-2.5 rounded-lg text-ink hover:bg-ink hover:text-canvas transition-colors"
         >
-          <ArrowLeft size={24} />
+          <ArrowLeft size={20} />
         </button>
       </div>
 
       <div className="max-w-3xl mx-auto -mt-20 relative z-10 px-4">
-        <div className="bg-white rounded-[3rem] shadow-2xl p-8 md:p-12 border border-gray-100">
+        <div className="bg-card rounded-xl border-2 border-ink shadow-[8px_8px_0_0_var(--ink)] p-7 md:p-10">
           {/* Shop Info. */}
-          <div className="flex justify-between items-start mb-6">
+          <div className="flex justify-between items-start mb-5">
             <div>
-              <span className="bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg">
-                {shop.category}
-              </span>
-              <h1 className="text-4xl md:text-5xl font-black text-gray-900 mt-4 uppercase tracking-tighter leading-none">
+              <Badge variant="accent">{shop.category}</Badge>
+              <h1 className="text-4xl md:text-5xl font-extrabold text-ink mt-4 tracking-tight leading-none">
                 {shop.name}
               </h1>
-              <p className="text-gray-500 font-bold mt-4 flex items-center gap-2">
-                <MapPin size={18} className="text-blue-500" /> {shop.location}
-              </p>
-            </div>
-          </div>
-          {/* Shop Desc. */}
-          <p className="text-gray-600 text-lg leading-relaxed mb-10 font-medium">
-            {shop.description}
-          </p>
-          {/* Shop's customer info- Ppl in line & Est. time */}
-          <div className="grid grid-cols-2 gap-4 mb-10">
-            <div className="bg-blue-50/50 p-6 rounded-[2rem] border border-blue-100">
-              <Users className="text-blue-600 mb-2" size={28} />
-              <p className="text-xs font-black text-blue-600/50 uppercase tracking-widest">
-                In Line
-              </p>
-              <p className="text-3xl font-black text-gray-900">
-                {shop.currentQueue}
-              </p>
-            </div>
-            <div className="bg-green-50/50 p-6 rounded-[2rem] border border-green-100">
-              <Clock className="text-green-600 mb-2" size={28} />
-              <p className="text-xs font-black text-green-600/50 uppercase tracking-widest">
-                Est. Wait
-              </p>
-              <p className="text-3xl font-black text-gray-900">
-                {shop.currentQueue * 15}m
+              <p className="text-ink-muted font-medium mt-3 flex items-center gap-2 text-sm">
+                <MapPin size={15} className="text-accent" /> {shop.location}
               </p>
             </div>
           </div>
 
-          <button
+          {/* Shop Desc. */}
+          <p className="text-ink-muted text-lg leading-relaxed mb-8 font-medium">
+            {shop.description}
+          </p>
+
+          {/* Shop's customer info- Ppl in line & Est. time */}
+          <div className="grid grid-cols-2 gap-4 mb-8">
+            <div className="bg-surface p-5 rounded-lg border border-dashed border-line">
+              <Users className="text-accent mb-2" size={24} />
+              <p className="font-mono text-[10px] text-ink-muted uppercase tracking-[0.2em]">
+                In line
+              </p>
+              <p className="text-3xl font-extrabold text-ink font-mono">
+                {shop.currentQueue}
+              </p>
+            </div>
+            <div className="bg-surface p-5 rounded-lg border border-dashed border-line">
+              <Clock className="text-success mb-2" size={24} />
+              <p className="font-mono text-[10px] text-ink-muted uppercase tracking-[0.2em]">
+                Est. wait
+              </p>
+              <p className="text-3xl font-extrabold text-ink font-mono">
+                {estimateWaitMinutes(shop.currentQueue, shop.avgWaitMinutes)}m
+              </p>
+            </div>
+          </div>
+
+          <Button
             onClick={handleJoinQueue}
             disabled={isJoining}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white py-6 rounded-[2rem] font-black text-xl shadow-xl shadow-blue-200 transition-all active:scale-95 flex items-center justify-center gap-3"
+            size="lg"
+            className="w-full"
           >
-            {isJoining ? (
-              <Loader2 className="animate-spin" />
-            ) : (
-              "JOIN THE QUEUE"
-            )}
-          </button>
+            {isJoining ? "Joining…" : "Join the queue"}
+          </Button>
         </div>
       </div>
     </div>

@@ -1,44 +1,143 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ------------------------------------------------------------------
+   Design tokens — semantic colors backed by CSS variables so the
+   whole app re-themes by swapping :root / .dark values. Components
+   use utilities like bg-canvas text-ink border-line and never need
+   dark: variants.
+------------------------------------------------------------------- */
+@theme inline {
+  --font-sans: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Space Mono", ui-monospace, monospace;
+
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-on-accent: var(--on-accent);
+  --color-success: var(--success);
+  --color-highlight: var(--highlight);
+}
+
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+  color-scheme: light;
+  /* warm newsprint paper */
+  --canvas: #f6f1e6;
+  --surface: #efe8d9;
+  --card: #fffdf7;
+  --ink: #1b1815;
+  --ink-muted: #6f6759;
+  --line: #ded4c0;
+  /* ticket vermilion */
+  --accent: #e03e1f;
+  --accent-hover: #c4341a;
+  --on-accent: #fffdf7;
+  --success: #2e7d4f;
+  --highlight: #f2b705;
+}
 
-  color-scheme: light dark;
-  color: rgba(39, 39, 39, 0.87);
-  background-color: #f0efef;
+.dark {
+  color-scheme: dark;
+  --canvas: #15130f;
+  --surface: #1c1913;
+  --card: #211d16;
+  --ink: #f3eee1;
+  --ink-muted: #a79d8b;
+  --line: #3a3427;
+  --accent: #ff5c3d;
+  --accent-hover: #ff7a5f;
+  --on-accent: #1b1815;
+  --success: #56b682;
+  --highlight: #ffc93c;
+}
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+html,
+body {
+  background-color: var(--canvas);
+  color: var(--ink);
+  margin: 0;
+  min-height: 100vh;
+}
+
+body {
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+/* ------------------------------------------------------------------
+   Queue loader — little figures shuffling forward into a counter.
+   --ql-step must equal figure width + flex gap for the illusion.
+------------------------------------------------------------------- */
+@keyframes ql-step {
+  0%,
+  12% {
+    transform: translateX(0);
+    opacity: 1;
   }
-  a:hover {
-    color: #747bff;
+  42%,
+  58% {
+    transform: translateX(calc(-1 * var(--ql-step)));
+    opacity: 1;
   }
-  button {
-    background-color: #f9f9f9;
+  70% {
+    transform: translateX(calc(-1 * var(--ql-step)));
+    opacity: 0;
+  }
+  70.01% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  85%,
+  100% {
+    transform: translateX(0);
+    opacity: 1;
   }
 }
 
+@keyframes ql-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-4px) rotate(-4deg);
+  }
+}
+
+@keyframes ticket-march {
+  to {
+    background-position: 24px 0;
+  }
+}
+
+.ql-figure {
+  animation: ql-step 3.2s ease-in-out infinite;
+}
+
+.ql-figure > * {
+  animation: ql-bob 1.4s ease-in-out infinite;
+}
+
+/* marching-ants dashed edge for tickets */
+.ticket-march {
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--line) 0 8px,
+    transparent 8px 16px
+  );
+  background-size: 24px 2px;
+  background-repeat: repeat-x;
+  animation: ticket-march 1s linear infinite;
+}

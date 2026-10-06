@@ -1,67 +1,39 @@
 import { SignIn } from "@clerk/clerk-react";
 import { Link } from "react-router-dom";
+import { clerkAppearance } from "../lib/clerkAppearance";
 
 const Login = () => {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-canvas px-4 py-12">
       <div className="mb-8 text-center">
-        <h1 className="text-4xl font-black tracking-tighter text-gray-900">
+        <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-accent font-bold mb-2">
+          Welcome back
+        </p>
+        <h1 className="text-4xl font-extrabold tracking-tight text-ink">
           Q-LINE
         </h1>
-        <p className="text-gray-500 font-medium">Manage your spots with ease</p>
+        <p className="text-ink-muted font-medium mt-1">
+          Manage your spots with ease
+        </p>
       </div>
 
-      <div className="pl-5 w-full max-w-md">
-        {/* Edited clerk component to match our UI */}
+      <div className="w-full max-w-md">
         <SignIn
           routing="path"
           path="/login"
           signUpUrl="/signup"
           forceRedirectUrl="/explore"
-          appearance={{
-            elements: {
-              card: {
-                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.1)",
-                borderRadius: "2.5rem",
-                border: "1px solid #f3f4f6",
-                padding: "2rem",
-                width: "100%",
-              },
-              formButtonPrimary: {
-                backgroundColor: "#2563eb",
-                fontSize: "0.875rem",
-                borderRadius: "1rem",
-                height: "3.5rem",
-                fontWeight: "700",
-                "&:hover": {
-                  backgroundColor: "#1d4ed8",
-                },
-              },
-              formFieldInput: {
-                backgroundColor: "#f9fafb",
-                borderRadius: "0.75rem",
-                border: "1px solid #e5e7eb",
-                height: "4rem",
-              },
-              footer: {
-                display: "none", // We'll use our custom link below for better control
-              },
-              headerTitle: {
-                fontSize: "1.25rem",
-                fontWeight: "700",
-              },
-            },
-          }}
+          appearance={clerkAppearance}
         />
 
         {/* Custom Footer Link */}
-        <p className="mt-8 text-center text-sm text-gray-500 font-medium">
+        <p className="mt-8 text-center text-sm text-ink-muted font-medium">
           Don't have an account?{" "}
           <Link
             to="/signup"
-            className="text-blue-600 font-black hover:underline transition-all"
+            className="text-accent font-bold hover:underline transition-all"
           >
-            SignUp
+            Sign up
           </Link>
         </p>
       </div>
